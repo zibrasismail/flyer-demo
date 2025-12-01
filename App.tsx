@@ -2,24 +2,37 @@ import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { FlyerViewer } from './components/FlyerViewer';
 import { ProductSidebar } from './components/ProductSidebar';
-import { MOCK_PRODUCTS } from './constants';
+import { MOCK_PRODUCTS, CURRENT_FLYER_PAGE } from './constants';
 import { Product } from './types';
 
 function App() {
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Default to the first product in the flyer hotspots if available
+  const defaultProductId = CURRENT_FLYER_PAGE.hotspots.length > 0 
+    ? CURRENT_FLYER_PAGE.hotspots[0].productId 
+    : null;
+
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(defaultProductId);
+  
+  // On mobile, we might want the sidebar closed initially even if a product is "selected" by default logic,
+  // but for the requested "80/20 split" desktop UI, we want it open.
+  // Let's track sidebar visibility mainly for mobile toggling.
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Derive the actual product object from ID
   const selectedProduct: Product | null = selectedProductId ? MOCK_PRODUCTS[selectedProductId] : null;
 
   const handleProductSelect = (id: string) => {
     setSelectedProductId(id);
-    setIsSidebarOpen(true);
+    setIsSidebarOpen(true); // Ensure sidebar opens on select (especially for mobile)
   };
 
   const handleCloseSidebar = () => {
     setIsSidebarOpen(false);
-    setSelectedProductId(null);
+    // We don't necessarily clear selectedProductId on close if we want to keep state when reopening,
+    // but for this interaction model, closing usually means "back to full view".
+    // However, on desktop with split view, "closing" might not be possible or might just collapse it.
+    // If the user strictly wants 80/20, maybe no close button on desktop? 
+    // For now, I'll leave the close action behavior as is (hides sidebar).
   };
 
   return (
@@ -29,8 +42,7 @@ function App() {
       {/* Main Content Area: Split View */}
       <main className="flex-1 flex overflow-hidden relative">
         
-        {/* Left Panel: Flyer Viewer */}
-        {/* Logic: On desktop, if sidebar is open, take up remaining space (approx 75-80%). If closed, 100%. */}
+        {/* Left Panel: Flyer Viewer (Takes ~80% on desktop) */}
         <div className="flex-1 h-full relative transition-all duration-300">
           <FlyerViewer 
             onProductSelect={handleProductSelect} 
@@ -38,32 +50,30 @@ function App() {
           />
         </div>
 
-        {/* Right Panel: Product Sidebar */}
+        {/* Right Panel: Product Sidebar (Takes ~20% on desktop) */}
         {/* 
-           Desktop: Width is strictly controlled to be ~20-25% (w-80 or w-96 usually fits this). 
-           Mobile: Slide over.
+           Desktop: Width is set to w-[20%] or w-[25%] to match "80/20" request.
+           Using w-[25%] (1/4) or w-1/5 (20%). Let's use w-[20%] explicitly.
+           Mobile: Fixed over content.
         */}
         <div className={`
           fixed md:relative inset-y-0 right-0 z-40
-          w-full md:w-[25%] lg:w-[22%] 
+          w-full md:w-[20%] min-w-[250px]
           transform transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none border-l border-gray-200 bg-white
-          ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0 md:hidden'}
+          ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'} 
+          ${/* Note: Removed md:hidden so it stays visible on desktop even if "closed" logic triggered, or we just handle isSidebarOpen differently. 
+              Actually, let's make it toggleable on mobile but persistent on desktop. 
+              If I keep 'translate-x-full' it will hide on desktop too. 
+              Let's override the translation for desktop if we want it always open? 
+              Or just init isSidebarOpen=true and let user close it if they really want?
+              The prompt implies it's a structural split. I'll assume it stays open on desktop.
+           */ ''}
+           ${/* Force open on desktop: override translate for md breakpoint */ 'md:translate-x-0'}
         `}>
-          {isSidebarOpen ? (
              <ProductSidebar 
                product={selectedProduct} 
                onClose={handleCloseSidebar}
              />
-          ) : (
-            // Placeholder when sidebar is "hidden" on desktop layout but we want to maintain structure if needed, 
-            // OR strictly hidden. The user prompt asked for "Open right side", implying it might be closed initially.
-            // However, typical flyer apps often keep the sidebar closed until clicked.
-            // Implementation: We keep the sidebar rendering conditional on 'isSidebarOpen' for mobile, 
-            // but for desktop, we might want it to collapse completely if nothing selected.
-            // Current CSS logic above hides it via `md:hidden` if !isSidebarOpen.
-            // To make it behave like 80/20 split ONLY when active:
-            null
-          )}
         </div>
 
         {/* Mobile Overlay Backdrop */}

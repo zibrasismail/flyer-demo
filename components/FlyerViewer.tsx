@@ -1,5 +1,6 @@
-import React from 'react';
-import { MOCK_PRODUCTS } from '../constants';
+import React, { useState, useRef } from 'react';
+import { CURRENT_FLYER_PAGE } from '../constants';
+import { detectHotspotsFromImage } from '../utils/hotspotDetection';
 
 interface FlyerViewerProps {
   onProductSelect: (productId: string) => void;
@@ -7,127 +8,187 @@ interface FlyerViewerProps {
 }
 
 export const FlyerViewer: React.FC<FlyerViewerProps> = ({ onProductSelect, selectedProductId }) => {
+  const [hoveredHotspotId, setHoveredHotspotId] = useState<string | null>(null);
+  const [debugCoords, setDebugCoords] = useState<{x: number, y: number} | null>(null);
+  const [hotspots, setHotspots] = useState(CURRENT_FLYER_PAGE.hotspots);
   
-  // Helper to render a product card within the flyer
-  const renderProductCard = (productId: string, customClasses: string) => {
-    const product = MOCK_PRODUCTS[productId];
-    if (!product) return null;
+  const { imageUrl } = CURRENT_FLYER_PAGE;
+  const imageRef = useRef<HTMLImageElement>(null);
+  const DEBUG_MODE = true; // Toggle this to false when done
 
-    const isSelected = selectedProductId === productId;
-    const saveAmount = product.originalPrice ? Math.round(product.originalPrice - product.price) : 0;
-    const savePercent = product.originalPrice ? Math.round((saveAmount / product.originalPrice) * 100) : 0;
+  const handleAutoDetect = () => {
+    if (imageRef.current) {
+      const detected = detectHotspotsFromImage(imageRef.current);
+      console.log('Detected Hotspots:', detected);
+      
+      // Map detected spots to existing products if possible, or just show them as overlay
+      // For now, let's replace the visual hotspots with detected ones to test alignment.
+      // Since we don't know which product is which, we'll assign temporary IDs or 
+      // just loop through mock products to assign them sequentially.
+      
+      const mappedHotspots = detected.map((spot, index) => {
+        // Try to preserve product mapping if count matches, else mock it
+        const existing = CURRENT_FLYER_PAGE.hotspots[index];
+        return {
+            ...spot,
+            productId: existing ? existing.productId : `p${index + 1}`
+        };
+      });
+      
+      setHotspots(mappedHotspots);
+    }
+  };
 
-    return (
-      <div 
-        onClick={() => onProductSelect(productId)}
-        className={`
-          relative group cursor-pointer transition-all duration-200 border-2
-          ${isSelected ? 'border-black ring-4 ring-yellow-400 z-20 scale-[1.02] shadow-2xl' : 'border-transparent hover:border-black/20 hover:shadow-lg'}
-          ${customClasses}
-        `}
-      >
-        {/* Hover "Shape" Effect */}
-        <div className={`absolute inset-0 bg-white opacity-0 group-hover:opacity-10 pointer-events-none transition-opacity duration-200`} />
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
-        <div className="h-full flex flex-col p-2 md:p-4">
-          {/* Discount Badge */}
-          <div className="mb-2">
-            <h3 className="text-[#DA291C] font-black text-xl md:text-3xl uppercase leading-none">
-              Save {saveAmount > 100 ? `$${saveAmount}` : `${savePercent}%`}
-            </h3>
-            <p className="text-black font-bold text-xs md:text-sm uppercase">{product.name}</p>
-          </div>
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      // Zoom
+      e.preventDefault();
+      const delta = e.deltaY * -0.01;
+      const newScale = Math.min(Math.max(1, scale + delta), 4);
+      setScale(newScale);
+    } else {
+      // Pan (if zoomed) - optional, or let browser scroll natural if not zoomed
+      // For this implementation, let's strictly use drag for pan to avoid scrolling conflicts
+    }
+  };
 
-          {/* Product Image */}
-          <div className="flex-1 relative flex items-center justify-center min-h-[120px]">
-             <img 
-               src={product.imageUrl} 
-               alt={product.name} 
-               className="max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
-             />
-          </div>
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (scale > 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    }
+  };
 
-          {/* Price Tag */}
-          <div className="mt-2">
-             <div className="text-xs text-gray-500 line-through font-medium">Was ${product.originalPrice?.toFixed(2)}</div>
-             <div className="text-4xl md:text-5xl font-black text-black tracking-tighter leading-none">
-               <span className="text-2xl align-top">$</span>
-               {Math.floor(product.price)}
-               <span className="text-2xl align-top underline decoration-2">{Math.round((product.price % 1) * 100)}</span>
-             </div>
-          </div>
-        </div>
-      </div>
-    );
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Debug logic
+    if (DEBUG_MODE) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      setDebugCoords({ x, y });
+    }
+
+    // Pan logic
+    if (isDragging && scale > 1) {
+      e.preventDefault();
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.5, 4));
+  const handleZoomOut = () => {
+    setScale(prev => {
+      const newScale = Math.max(prev - 0.5, 1);
+      if (newScale === 1) setPosition({ x: 0, y: 0 }); // Reset pos on reset zoom
+      return newScale;
+    });
   };
 
   return (
-    <div className="h-full w-full bg-gray-200 overflow-y-auto overflow-x-hidden flex justify-center p-4">
-      {/* Flyer Paper Container */}
-      <div className="w-full max-w-[1000px] bg-[#FFF200] shadow-2xl min-h-[1200px] flex flex-col origin-top">
-        
-        {/* Header Section */}
-        <div className="bg-[#1A1A1A] p-6 text-center relative overflow-hidden">
-          {/* Decorative bursts */}
-          <div className="absolute top-0 left-0 w-full h-full opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-yellow-500 via-red-500 to-transparent animate-pulse" />
-          
-          <h2 className="text-white text-sm md:text-base font-bold uppercase tracking-widest mb-2 relative z-10">
-            Locally Owned. Genuinely Canadian.
-          </h2>
-          <div className="relative z-10 inline-block">
-             <div className="bg-[#DA291C] text-white p-2 rounded-lg inline-block mr-4 align-middle border-2 border-white transform -rotate-6">
-                <span className="font-bold text-2xl border-2 border-white p-1 block">hh</span>
-             </div>
-             <div className="inline-block text-left align-middle">
-               <h1 className="text-white font-black text-5xl md:text-7xl leading-none tracking-tighter italic">
-                 BLACK <br/>
-                 <span className="text-[#FFF200] drop-shadow-[2px_2px_0px_rgba(218,41,28,1)]">FRIDAY</span> <br/>
-                 SALE
-               </h1>
-             </div>
-          </div>
-          <div className="mt-2 text-white text-xs font-medium relative z-10">
-            SAVINGS AVAILABLE NOVEMBER 27 - DECEMBER 3, 2025
-          </div>
-        </div>
-
-        {/* Grid Layout Section */}
-        {/* Corresponds to the layout: Tree (Left), Tools/BBQ (Center), Vacuum/Cookie (Right) */}
-        <div className="flex-1 p-4 grid grid-cols-1 md:grid-cols-12 gap-0.5 bg-black">
-          
-          {/* Left Column (Tree) - Spans 2 rows on desktop */}
-          <div className="md:col-span-4 bg-[#FFF200] h-full">
-            {renderProductCard('p1', 'h-full')}
-          </div>
-
-          {/* Middle & Right Columns Container */}
-          <div className="md:col-span-8 grid grid-cols-2 gap-0.5 bg-black h-full">
-            
-            {/* Top Row: Tools & Vacuum */}
-            <div className="bg-[#FFF200] aspect-[3/4]">
-               {renderProductCard('p2', 'h-full')}
-            </div>
-            <div className="bg-[#FFF200] aspect-[3/4]">
-               {renderProductCard('p3', 'h-full')}
-            </div>
-
-            {/* Bottom Row: BBQ & Cookie Sheet */}
-            <div className="bg-[#FFF200] aspect-[3/4]">
-               {renderProductCard('p5', 'h-full')}
-            </div>
-            <div className="bg-[#FFF200] aspect-[3/4]">
-               {renderProductCard('p4', 'h-full')}
-            </div>
-
-          </div>
-        </div>
-
-        {/* Footer Banner */}
-        <div className="bg-black text-[#FFF200] p-4 text-center">
-          <h2 className="text-3xl md:text-5xl font-black uppercase tracking-widest">Door Crasher Specials!</h2>
-        </div>
-
+    <div className="w-full h-full bg-gray-800 overflow-hidden flex flex-col relative">
+      {/* Controls Toolbar */}
+      <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
+        <button onClick={handleZoomIn} className="bg-white text-gray-800 p-2 rounded shadow hover:bg-gray-100" aria-label="Zoom In">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+        </button>
+        <button onClick={handleZoomOut} className="bg-white text-gray-800 p-2 rounded shadow hover:bg-gray-100" aria-label="Zoom Out">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+        </button>
       </div>
+
+      {/* Debug Overlay */}
+      {DEBUG_MODE && (
+        <div className="absolute top-4 left-4 z-50 flex flex-col gap-2 pointer-events-none">
+            {debugCoords && (
+              <div className="bg-black bg-opacity-75 text-white p-2 rounded font-mono text-xs">
+                X: {debugCoords.x.toFixed(1)}%<br/>
+                Y: {debugCoords.y.toFixed(1)}%
+              </div>
+            )}
+            <button 
+              onClick={handleAutoDetect}
+              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-3 rounded shadow"
+            >
+              Auto Detect Hotspots
+            </button>
+        </div>
+      )}
+
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-hidden flex justify-center items-start p-4 cursor-grab active:cursor-grabbing"
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <div 
+          className="relative shadow-2xl inline-block bg-white transition-transform duration-100 ease-out origin-top-center"
+          style={{
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            maxWidth: '100%'
+          }}
+        >
+          {/* Catalogue Image */}
+          <img 
+            ref={imageRef}
+            src={imageUrl} 
+            alt="Catalogue Page" 
+            className="block select-none pointer-events-none max-w-full h-auto"
+            crossOrigin="anonymous"
+            draggable={false}
+          />
+
+        {/* Hotspot Overlay Layer */}
+        <div className="absolute inset-0">
+          {hotspots.map((hotspot) => {
+            const isSelected = selectedProductId === hotspot.productId;
+            const isHovered = hoveredHotspotId === hotspot.id;
+
+            return (
+              <div
+                key={hotspot.id}
+                className={`absolute transition-all duration-200 
+                  ${(isHovered || isSelected) 
+                    ? 'border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] z-10' 
+                    : 'hover:bg-white hover:bg-opacity-10'}
+                `}
+                style={{
+                  left: `${hotspot.x}%`,
+                  top: `${hotspot.y}%`,
+                  width: `${hotspot.width}%`,
+                  height: `${hotspot.height}%`,
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={() => setHoveredHotspotId(hotspot.id)}
+                onMouseLeave={() => setHoveredHotspotId(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onProductSelect(hotspot.productId);
+                }}
+                title="Click to view details"
+                role="button"
+                aria-label={`View details for product`}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
     </div>
   );
 };
