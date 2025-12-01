@@ -1,43 +1,17 @@
 import React, { useState, useRef } from 'react';
-import { CURRENT_FLYER_PAGE } from '../constants';
-import { detectHotspotsFromImage } from '../utils/hotspotDetection';
+import { FlyerPage } from '../types';
 
 interface FlyerViewerProps {
   onProductSelect: (productId: string) => void;
   selectedProductId: string | null;
+  flyerPage: FlyerPage;
 }
 
-export const FlyerViewer: React.FC<FlyerViewerProps> = ({ onProductSelect, selectedProductId }) => {
+export const FlyerViewer: React.FC<FlyerViewerProps> = ({ onProductSelect, selectedProductId, flyerPage }) => {
   const [hoveredHotspotId, setHoveredHotspotId] = useState<string | null>(null);
-  const [debugCoords, setDebugCoords] = useState<{x: number, y: number} | null>(null);
-  const [hotspots, setHotspots] = useState(CURRENT_FLYER_PAGE.hotspots);
   
-  const { imageUrl } = CURRENT_FLYER_PAGE;
+  const { imageUrl, hotspots } = flyerPage;
   const imageRef = useRef<HTMLImageElement>(null);
-  const DEBUG_MODE = false; // Toggle this to false when done
-
-  const handleAutoDetect = () => {
-    if (imageRef.current) {
-      const detected = detectHotspotsFromImage(imageRef.current);
-      console.log('Detected Hotspots:', detected);
-      
-      // Map detected spots to existing products if possible, or just show them as overlay
-      // For now, let's replace the visual hotspots with detected ones to test alignment.
-      // Since we don't know which product is which, we'll assign temporary IDs or 
-      // just loop through mock products to assign them sequentially.
-      
-      const mappedHotspots = detected.map((spot, index) => {
-        // Try to preserve product mapping if count matches, else mock it
-        const existing = CURRENT_FLYER_PAGE.hotspots[index];
-        return {
-            ...spot,
-            productId: existing ? existing.productId : `p${index + 1}`
-        };
-      });
-      
-      setHotspots(mappedHotspots);
-    }
-  };
 
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -66,15 +40,6 @@ export const FlyerViewer: React.FC<FlyerViewerProps> = ({ onProductSelect, selec
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Debug logic
-    if (DEBUG_MODE) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      setDebugCoords({ x, y });
-    }
-
-    // Pan logic
     if (isDragging && scale > 1) {
       e.preventDefault();
       setPosition({
@@ -108,24 +73,6 @@ export const FlyerViewer: React.FC<FlyerViewerProps> = ({ onProductSelect, selec
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
         </button>
       </div>
-
-      {/* Debug Overlay */}
-      {DEBUG_MODE && (
-        <div className="absolute top-4 left-4 z-50 flex flex-col gap-2 pointer-events-none">
-            {debugCoords && (
-              <div className="bg-black bg-opacity-75 text-white p-2 rounded font-mono text-xs">
-                X: {debugCoords.x.toFixed(1)}%<br/>
-                Y: {debugCoords.y.toFixed(1)}%
-              </div>
-            )}
-            <button 
-              onClick={handleAutoDetect}
-              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-3 rounded shadow"
-            >
-              Auto Detect Hotspots
-            </button>
-        </div>
-      )}
 
       <div 
         ref={containerRef}

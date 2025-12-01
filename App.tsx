@@ -1,21 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { FlyerViewer } from './components/FlyerViewer';
 import { ProductSidebar } from './components/ProductSidebar';
-import { MOCK_PRODUCTS, CURRENT_FLYER_PAGE } from './constants';
-import { Product } from './types';
+import { fetchFlyerData, FlyerData } from './services/flyerApi';
+import { Product, FlyerPage } from './types';
 
 function App() {
-  // Default to null so no product is selected initially
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  
-  // On mobile, we might want the sidebar closed initially even if a product is "selected" by default logic,
-  // but for the requested "80/20 split" desktop UI, we want it open.
-  // Let's track sidebar visibility mainly for mobile toggling.
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [flyerData, setFlyerData] = useState<FlyerData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Derive the actual product object from ID
-  const selectedProduct: Product | null = selectedProductId ? MOCK_PRODUCTS[selectedProductId] : null;
+  useEffect(() => {
+    fetchFlyerData()
+      .then(data => {
+        setFlyerData(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  const selectedProduct: Product | null = 
+    selectedProductId && flyerData ? flyerData.products[selectedProductId] : null;
 
   const handleProductSelect = (id: string) => {
     setSelectedProductId(id);
@@ -31,6 +41,22 @@ function App() {
     // For now, I'll leave the close action behavior as is (hides sidebar).
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-xl text-gray-600">Loading flyer...</div>
+      </div>
+    );
+  }
+
+  if (error || !flyerData) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-xl text-red-600">Error: {error || 'Failed to load data'}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-100 overflow-hidden font-sans text-gray-800">
       <Header />
@@ -43,6 +69,7 @@ function App() {
           <FlyerViewer 
             onProductSelect={handleProductSelect} 
             selectedProductId={selectedProductId}
+            flyerPage={flyerData.flyerPage}
           />
         </div>
 
