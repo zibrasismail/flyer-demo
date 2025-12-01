@@ -6,12 +6,8 @@ import { MOCK_PRODUCTS, CURRENT_FLYER_PAGE } from './constants';
 import { Product } from './types';
 
 function App() {
-  // Default to the first product in the flyer hotspots if available
-  const defaultProductId = CURRENT_FLYER_PAGE.hotspots.length > 0 
-    ? CURRENT_FLYER_PAGE.hotspots[0].productId 
-    : null;
-
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(defaultProductId);
+  // Default to null so no product is selected initially
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   
   // On mobile, we might want the sidebar closed initially even if a product is "selected" by default logic,
   // but for the requested "80/20 split" desktop UI, we want it open.

@@ -3,82 +3,107 @@ import { FlyerPage, Product } from './types';
 export const MOCK_PRODUCTS: Record<string, Product> = {
   'p1': {
     id: 'p1',
-    name: 'Prelit Noble Pine Tree',
-    brand: 'DANSON DECOR',
-    sku: '5656-776',
-    price: 49.97,
-    originalPrice: 99.99,
-    description: '300 warm white lights. 48" x 6-1/2". Easy assembly with hinged branches. Includes sturdy metal stand. A classic addition to your holiday decor.',
-    imageUrl: 'https://images.unsplash.com/photo-1544062329-3733a1cc0cc5?q=80&w=800&auto=format&fit=crop',
-    category: 'Christmas',
-    rating: 4.5
-  },
-  'p2': {
-    id: 'p2',
-    name: 'Tool Chest & Cabinet',
+    name: 'Premium Tool & Cabinet Combo',
     brand: 'BENCHMARK',
-    sku: '1112-525',
-    price: 169.97,
-    originalPrice: 249.99,
-    description: '6 drawers with 2 locking casters. 220 lb weight capacity. 24-1/4" x 42-3/4". Heavy-duty steel construction for professional garage storage.',
-    imageUrl: 'https://images.unsplash.com/photo-1595054371968-3e406368d447?q=80&w=800&auto=format&fit=crop',
+    sku: '997-664',
+    price: 199.99,
+    originalPrice: 499.99,
+    description: '9 Drawers, Locking Casters, 300 lb capacity, warning kit included.',
+    imageUrl: './PremiumTool.png',
     category: 'Tools',
     rating: 4.8
   },
+
+  'p2': {
+    id: 'p2',
+    name: 'Propane Barbecue',
+    brand: 'DYNA-GLO',
+    sku: '437-456',
+    price: 199.99,
+    originalPrice: 399.99,
+    description: '4 Main burners + Side Sear Burner. Large cooking space for versatile grilling.',
+    imageUrl: './Propane.png',
+    category: 'Outdoor',
+    rating: 4.6
+  },
+
   'p3': {
     id: 'p3',
     name: 'Wet/Dry Vacuum',
     brand: 'BENCHMARK',
-    sku: '1277-023',
-    price: 57.97,
+    sku: 'EP-6312',
+    price: 57.99,
     originalPrice: 129.99,
-    description: 'Accessories included. 5.2 gal./20 L capacity. Powerful motor for home and workshop cleanup. Features blower port and onboard storage.',
-    imageUrl: 'https://plus.unsplash.com/premium_photo-1678223631980-60b643039d91?q=80&w=800&auto=format&fit=crop',
+    description: '6 Gallon Capacity, 5.0 Peak HP Motor, includes accessories for multiple cleaning tasks.',
+    imageUrl: './wet-dry.png',
     category: 'Tools',
-    rating: 4.2
+    rating: 4.5
   },
+
   'p4': {
     id: 'p4',
-    name: '3 Pc. Non-Stick Cookie Sheet Set',
-    brand: 'MYKITCHEN',
-    sku: '4020-018',
-    price: 9.97,
-    originalPrice: 27.99,
-    description: 'Carbon steel with durable non-stick coating. Includes small, medium, and large sheets. Warp-resistant construction.',
-    imageUrl: 'https://images.unsplash.com/photo-1598155523122-38423ab4d62b?q=80&w=800&auto=format&fit=crop',
-    category: 'Kitchen',
-    rating: 3.9
+    name: '7.5 ft Prelit Noble Pine Lights',
+    brand: 'PRELIT NOBLE',
+    sku: '957-674',
+    price: 179.99,
+    originalPrice: 299.99,
+    description: '600 Warm White LED Lights. Easy assembly. A beautiful holiday centerpiece.',
+    imageUrl: '/Noblelights.png',
+    category: 'Christmas',
+    rating: 4.7
   },
+
   'p5': {
     id: 'p5',
-    name: 'Barbecue',
-    brand: 'Dyna-Glo',
-    sku: '6421-161',
-    price: 169.97,
-    originalPrice: 249.99,
-    description: 'Porcelain coated cast iron cooking grates with warming rack. 35,000 BTU. 3 Burners providing even heat distribution.',
-    imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=800&auto=format&fit=crop',
+    name: '3 Pc. Non-Stick Cookie Sheet Set',
+    brand: 'MYKITCHEN',
+    sku: '901-334',
+    price: 18.00,
+    originalPrice: 36.00,
+    description: 'Heavy-gauge steel, non-stick coating, dishwasher safe. Perfect for all baking needs.',
+    imageUrl: './Non-Stick.png',
+    category: 'Kitchen',
+    rating: 4.2
+  },
+
+  'p6': {
+    id: 'p6',
+    name: 'Mosquito Repeller',
+    brand: 'THERMACELL',
+    sku: '67-890',
+    price: 27.99,
+    originalPrice: 39.99,
+    description: 'Portable, cordless repeller with 15 ft zone protection. Keep bugs away effectively.',
+    imageUrl: './Mosquito.png',
     category: 'Outdoor',
-    rating: 4.6
+    rating: 4.3
   }
 };
 
-// This represents the single flyer page image and where the products are located on it.
+
 export const CURRENT_FLYER_PAGE: FlyerPage = {
   id: 'page-1',
-  // In a real scenario, this would be the URL of the provided flyer image.
-  // Using a placeholder that represents the "Black Friday Sale" flyer.
-  imageUrl: '/catalogue.jpg', 
+  imageUrl: '/flyer_new.jpg',
   hotspots: [
-    // Left Column - Tree (approx)
-    { id: 'h1', productId: 'p1', x: 5, y: 45, width: 28, height: 50 },
-    // Middle Top - Tool Chest
-    { id: 'h2', productId: 'p2', x: 35, y: 45, width: 30, height: 25 },
-    // Right Top - Vacuum
-    { id: 'h3', productId: 'p3', x: 67, y: 45, width: 30, height: 25 },
-    // Middle Bottom - Barbecue
-    { id: 'h4', productId: 'p5', x: 35, y: 72, width: 30, height: 23 },
-    // Right Bottom - Cookie Sheet
-    { id: 'h5', productId: 'p4', x: 67, y: 72, width: 30, height: 23 }
+    // Row 1
+    // Left: Tool Cabinet
+    { id: 'h1', productId: 'p1', x: 10, y: 35, width: 25, height: 28 },
+
+    // Middle: BBQ
+    { id: 'h2', productId: 'p2', x: 35, y: 35, width: 30, height: 28 },
+
+    // Right: Vacuum
+    { id: 'h3', productId: 'p3', x: 65.5, y: 35, width: 27.5, height: 28 },
+
+    // Row 2
+    // Left: Tree
+    { id: 'h4', productId: 'p4', x: 10, y: 64, width: 25, height: 24 },
+
+    // Middle: Cookie Sheets
+    { id: 'h5', productId: 'p5', x: 35, y: 64, width: 30, height: 24 },
+
+    // Right: Mosquito Repeller
+    { id: 'h6', productId: 'p6', x: 65.5, y: 64, width: 27.5, height: 24 }
   ]
 };
+

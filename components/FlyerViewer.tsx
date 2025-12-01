@@ -14,7 +14,7 @@ export const FlyerViewer: React.FC<FlyerViewerProps> = ({ onProductSelect, selec
   
   const { imageUrl } = CURRENT_FLYER_PAGE;
   const imageRef = useRef<HTMLImageElement>(null);
-  const DEBUG_MODE = true; // Toggle this to false when done
+  const DEBUG_MODE = false; // Toggle this to false when done
 
   const handleAutoDetect = () => {
     if (imageRef.current) {
@@ -129,7 +129,7 @@ export const FlyerViewer: React.FC<FlyerViewerProps> = ({ onProductSelect, selec
 
       <div 
         ref={containerRef}
-        className="flex-1 overflow-hidden flex justify-center items-start p-4 cursor-grab active:cursor-grabbing"
+        className="flex-1 overflow-auto flex justify-center items-start p-4 cursor-grab active:cursor-grabbing"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -163,9 +163,11 @@ export const FlyerViewer: React.FC<FlyerViewerProps> = ({ onProductSelect, selec
               <div
                 key={hotspot.id}
                 className={`absolute transition-all duration-200 
-                  ${(isHovered || isSelected) 
-                    ? 'border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] z-10' 
-                    : 'hover:bg-white hover:bg-opacity-10'}
+                  ${isHovered 
+                    ? 'border-2 border-red-600 bg-black bg-opacity-10 z-10' 
+                    : isSelected
+                      ? 'border-2 border-blue-600 z-10'
+                      : 'hover:border-2 hover:border-red-600 hover:bg-black hover:bg-opacity-10'}
                 `}
                 style={{
                   left: `${hotspot.x}%`,
